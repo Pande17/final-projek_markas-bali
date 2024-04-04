@@ -18,7 +18,7 @@ func importFileCsv() {
 	// ini case CLI saat dijalankan tanpa package flag
 	cls.CLS()
 	var err error
-	
+
 	fmt.Print("Masukkan path lokasi file CSV: ")
 	fmt.Scanln(&FilePath)
 
@@ -33,7 +33,7 @@ func importFileCsv() {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
-func main(){
+func main() {
 	importFileCsv()
 	// ngebukak file csv nya
 	file, err := os.Open(FilePath)
@@ -43,18 +43,19 @@ func main(){
 		return
 	}
 	// close file csv
-	defer file.Close() 
+	defer file.Close()
 
 	// variabel yg isinya baru ngebaca file csv
 	reader := csv.NewReader(file)
 
-	// ni ngebaca semuanya 
+	// ni ngebaca semuanya
 	records, err := reader.ReadAll()
 	if err != nil {
 		// case error
 		fmt.Println("Error:", err)
 		return
 	}
+	fmt.Println("pande dajjal")
 
 	fmt.Println(records)
 
