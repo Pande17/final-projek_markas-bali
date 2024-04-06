@@ -5,12 +5,12 @@ import (
 )
 
 type BaseData struct {
-	id         string
-	name       string
-	email      string
-	phone      int
-	address    string
-	city       string
-	postalcode int
-	Tanggal    time.Time
+	id         string    `json:"_id"`
+	name       string    `json:"name"`
+	email      string    `json:"email"`
+	phone      int       `json:"phone"`
+	address    string    `json:"address"`
+	city       string    `json:"city"`
+	postalcode int       `json:"postal_code"`
+	Tanggal    time.Time `json:"tanggal"`
 }
