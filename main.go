@@ -55,7 +55,7 @@ func main() {
 		fmt.Println("Error:", err)
 		return
 	}
-	fmt.Println("pande dajjal")
+	// fmt.Println("pande dajjal")
 
 	fmt.Println(records)
 
