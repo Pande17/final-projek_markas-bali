@@ -5,10 +5,12 @@ import (
 )
 
 type BaseData struct {
-	ID 		string 
-	Name 	string
-	Age 	int
-	Phone 	int
-	Email 	string	
-	Tanggal	time.Time
+	id         string
+	name       string
+	email      string
+	phone      int
+	address    string
+	city       string
+	postalcode int
+	Tanggal    time.Time
 }

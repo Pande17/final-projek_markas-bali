@@ -27,9 +27,9 @@ func importFileCsv() {
 		panic(err)
 	}
 
-	fmt.Println("\n\n\n======================================")
-	fmt.Println("Tekan 'Enter' untuk melanjutkan...")
 	fmt.Println("\n======================================")
+	fmt.Println("   Tekan 'Enter' untuk melanjutkan...  ")
+	fmt.Println("======================================")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
