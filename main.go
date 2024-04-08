@@ -77,7 +77,8 @@ func main() {
 	}
 
 	// Convert JSON to string
-	jsonString, err := json.Marshal(jsonData)
+	// pakek marsal inden supaya file josn nya rapi kebawah.. ga nyambung terus kesamping
+	jsonString, err := json.MarshalIndent(jsonData,"", " ")
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
