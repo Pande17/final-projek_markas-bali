@@ -114,6 +114,7 @@ func main() {
 
         // itungan lambat bar
 		time.Sleep(40 * time.Millisecond)
+		cls.CLS()
         bar.Add(1)
     }
 
