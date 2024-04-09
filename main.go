@@ -35,7 +35,6 @@ func importFileCsv() {
 	fmt.Printf("File berhasil divalidasi dan konversi : %s", FilePath)
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
-
 	// testing flag package ( masih belajar makek :v)
 	inputFile := flag.String("input", "", "Set input file")
 	fmt.Println(inputFile)
@@ -71,14 +70,14 @@ func main() {
 	for _, row := range records {
 		entry := make(map[string]string)
 		for i, value := range row {
-			entry[records[0][i]] = value 
+			entry[records[0][i]] = value
 		}
 		jsonData = append(jsonData, entry)
 	}
 
 	// Convert JSON to string
 	// pakek marsal inden supaya file josn nya rapi kebawah.. ga nyambung terus kesamping
-	jsonString, err := json.MarshalIndent(jsonData,"", " ")
+	jsonString, err := json.MarshalIndent(jsonData, "", " ")
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
@@ -87,41 +86,30 @@ func main() {
 	// Print JSON string
 	fmt.Println(string(jsonString))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	// testing progress bar ( ini udah berhasil.. tinggal copas & benerin logicny sesuai dengan case yg dibutuhkan)
-    csvData := records // contoh data ngambil semua isi csv
-    
-    // variabel  progress bar dari total valuye 
-    bar := progressbar.Default(int64(len(csvData)), "Memproses Data")
+	csvData := records // contoh data ngambil semua isi csv
 
-    // loop sesuai isi data
-    for _, value := range csvData {
-        // proses nampilin log
-        fmt.Println("Processing value:", value)
+	// variabel  progress bar dari total valuye
+	bar := progressbar.Default(int64(len(csvData)), "Memproses Data")
 
-        // itungan lambat bar
+	// loop sesuai isi data
+	for _, value := range csvData {
+		// proses nampilin log
+		fmt.Println("Processing value:", value)
+
+		// itungan lambat bar
 		time.Sleep(40 * time.Millisecond)
+		// tambah cls untuk estetika :v
 		cls.CLS()
-        bar.Add(1)
-    }
-
-    // Hapus abis suud prosesny
-    bar.Clear()
+		bar.Add(1)
+	}
+		// CsvConvert()
+	// Hapus abis suud prosesny
+	bar.Clear()
 
 	fmt.Println("\n======================================")
 	fmt.Println("Tekan 'Enter' untuk melanjutkan...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
+
+

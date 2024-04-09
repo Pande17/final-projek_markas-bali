@@ -14,3 +14,4 @@ type BaseData struct {
 	Postalcode int       `json:"postal_code"`
 	Tanggal    time.Time `json:"tanggal"`
 }
+
