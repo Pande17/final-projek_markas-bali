@@ -11,8 +11,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/MasterDimmy/go-cls"
+	"github.com/schollz/progressbar/v3"
 )
 
 func main() {
@@ -69,7 +71,7 @@ func main() {
 	if err := controller.ValidateData(headers, rows); err != nil {
 		fmt.Println("Error :", err)
 		return
-	}
+	} 
 
 	jsonData := convertToJSON(headers, rows)
 
@@ -94,7 +96,14 @@ func main() {
 		return
 	}
 	
-	// 
+	bar := progressbar.Default(100)
+
+	for i := 0; i < 100; i++ {
+		time.Sleep(50 * time.Millisecond)
+		bar.Add(1)
+	}
+	bar.Clear()
+
 	fmt.Printf("Konversi dan Validasi File Berhasil, Data Tertulis ke file %s di Folder ", outputFile)
 }
 
