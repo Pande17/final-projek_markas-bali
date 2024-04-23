@@ -31,7 +31,7 @@ func importFileCsv() {
 		panic(err)
 	}
 
-	fmt.Println("\n=========== PROSES COMPLETE ===========")
+	fmt.Println("=========== PROSES COMPLETE ===========")
 	fmt.Printf("File berhasil divalidasi dan konversi : %s", FilePath)
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
@@ -103,7 +103,7 @@ func main() {
 		cls.CLS()
 		bar.Add(1)
 	}
-		// CsvConvert()
+	// CsvConvert()
 	// Hapus abis suud prosesny
 	bar.Clear()
 
@@ -111,5 +111,3 @@ func main() {
 	fmt.Println("Tekan 'Enter' untuk melanjutkan...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
-
-
