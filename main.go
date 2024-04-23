@@ -1,6 +1,7 @@
 package main
 
 import (
+	"FinalProject/Kelompok10/model"
 	"bufio"
 	"encoding/csv"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/MasterDimmy/go-cls"
@@ -38,6 +40,51 @@ func importFileCsv() {
 	// testing flag package ( masih belajar makek :v)
 	inputFile := flag.String("input", "", "Set input file")
 	fmt.Println(inputFile)
+}
+
+func convWithGoroutine(ch <-chan model.BaseData, wg *sync.WaitGroup, noUrut int) {
+	for csvFile := range ch {
+		dataJson, err := json.Marshal(csvFile)
+		if err != nil {
+			fmt.Println("Terjadi error:", err)
+		}
+
+		err = os.WriteFile(fmt.Sprintf("books/%s.json", csvFile.Name), dataJson, 0644)
+		if err != nil {
+			fmt.Println("Terjadi error:", err)
+		}
+
+		fmt.Printf("Antrian No %d Memproses Kode Buku : %s!\n", noUrut, csvFile.Name)
+	}
+	wg.Done()
+}
+
+func convertCsvToJson() {
+	csvFile, err := os.Open(FilePath)
+	if err != nil {
+		fmt.Println("Terjadi error : ", err)
+		return
+	}
+	defer csvFile.Close()
+
+	// parse file csv
+	csvReader := csv.NewReader(csvFile)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		fmt.Println("Terjadi Error : ", err)
+		return
+	}
+
+	// persiapan untuk menyimpan file JSON
+	var jsonData []map[string]string
+
+	// mengonversi setiap baris CSV menjadi map
+	for _, row := range records {
+		record := make(map[string]string)
+		for i, column := range row {
+			record[fmt.Sprintf("colum%d")]
+		}
+	}
 }
 
 func main() {
@@ -85,6 +132,23 @@ func main() {
 
 	// Print JSON string
 	fmt.Println(string(jsonString))
+
+	// tambahan hari ini ( 23/04/2024)
+	_ = os.Mkdir("csv_convert", 0777)
+	ch := make(chan model.BaseData)
+	wg := sync.WaitGroup{}
+	jumlahProses := 5
+	for i := 0; i < jumlahProses; i++ {
+		wg.Add(1)
+		go convWithGoroutine(ch, &wg, i)
+	}
+	for _, csv := range records {
+		ch <- csv
+	}
+
+	close(ch)
+
+	wg.Wait()
 
 	// testing progress bar ( ini udah berhasil.. tinggal copas & benerin logicny sesuai dengan case yg dibutuhkan)
 	csvData := records // contoh data ngambil semua isi csv

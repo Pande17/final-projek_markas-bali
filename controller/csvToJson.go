@@ -112,7 +112,7 @@ func CsvConvert() {
 
 	var channel = make(chan BaseData)
 
-	jml := 6
+	jml := 5
 	fmt.Println("menjalankan", jml, "process goroutine")
 
 	for i := 0; i < jml; i++ {
