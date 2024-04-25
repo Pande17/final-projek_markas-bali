@@ -2,176 +2,253 @@ package main
 
 import (
 	"FinalProject/Kelompok10/model"
-	"bufio"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/MasterDimmy/go-cls"
+	"github.com/asaskevich/govalidator"
 	"github.com/schollz/progressbar/v3"
 )
 
-// public variable
-var FilePath string
-
-// private function
-func importFileCsv() {
-	// ini case CLI saat dijalankan tanpa package flag
-	cls.CLS()
-	var err error
-
-	fmt.Print("Masukkan input file : ")
-	fmt.Scanln(&FilePath)
-
-	FilePath, err = filepath.Abs(FilePath)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("=========== PROSES COMPLETE ===========")
-	fmt.Printf("File berhasil divalidasi dan konversi : %s", FilePath)
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-
-	// testing flag package ( masih belajar makek :v)
-	inputFile := flag.String("input", "", "Set input file")
-	fmt.Println(inputFile)
-}
-
-func convWithGoroutine(ch <-chan model.BaseData, wg *sync.WaitGroup, noUrut int) {
-	for csvFile := range ch {
-		dataJson, err := json.Marshal(csvFile)
-		if err != nil {
-			fmt.Println("Terjadi error:", err)
-		}
-
-		err = os.WriteFile(fmt.Sprintf("books/%s.json", csvFile.Name), dataJson, 0644)
-		if err != nil {
-			fmt.Println("Terjadi error:", err)
-		}
-
-		fmt.Printf("Antrian No %d Memproses Kode Buku : %s!\n", noUrut, csvFile.Name)
-	}
-	wg.Done()
-}
-
-func convertCsvToJson() {
-	csvFile, err := os.Open(FilePath)
-	if err != nil {
-		fmt.Println("Terjadi error : ", err)
-		return
-	}
-	defer csvFile.Close()
-
-	// parse file csv
-	csvReader := csv.NewReader(csvFile)
-	records, err := csvReader.ReadAll()
-	if err != nil {
-		fmt.Println("Terjadi Error : ", err)
-		return
-	}
-
-	// persiapan untuk menyimpan file JSON
-	var jsonData []map[string]string
-
-	// mengonversi setiap baris CSV menjadi map
-	for _, row := range records {
-		record := make(map[string]string)
-		for i, column := range row {
-			record[fmt.Sprintf("colum%d")]
-		}
-	}
-}
+const banyakData = 5 // banyak data untuk diproses secara pararel
 
 func main() {
-	importFileCsv()
-	// ngebukak file csv nya
-	file, err := os.Open(FilePath)
-	if err != nil {
-		// case error nya
-		fmt.Println("Error:", err)
+	cls.CLS()
+
+	inputFlag := flag.String("input", "", "set input file")
+	outputFlag := flag.String("output", "", "set output file (optional)")
+	flag.Parse()
+
+	
+	var inputPath string
+	var rows [][]string
+	var outputAllFile string
+    if *outputFlag != "" {
+        outputAllFile = *outputFlag
+    }
+
+	if *inputFlag == "" {
+		fmt.Println("==============================================")
+		fmt.Print("Masukkan Path File CSV: ") 
+		fmt.Scanln(&inputPath)
+		fmt.Print("==============================================\n")
+	} else {
+		inputPath = *inputFlag
+	}
+
+	filename := filepath.Base(inputPath)
+	extension := filepath.Ext(inputPath)
+
+	if outputAllFile == "" {
+        outputAllFile = strings.TrimSuffix(filename, filepath.Ext(filename)) // Menghapus ekstensi dari nama file
+    }
+	outputAllFile = getOutputFileName(outputFlag, outputAllFile)
+	outputFile := filepath.Join(outputAllFile)
+
+	if _, err := os.Stat(outputFile); err == nil {
+        fmt.Printf("File %s sudah ada. Apakah Anda ingin mengkonversinya lagi? (y/n): ", outputFile)
+        var convertLagi string
+        fmt.Scanln(&convertLagi)
+        if convertLagi != "y" && convertLagi != "Y" {
+            fmt.Println("Konversi dibatalkan.")
+            return
+        }
+    }
+
+	if extension != ".csv" {
+		fmt.Printf("Input path file: %s is not a valid CSV file\n", inputPath)
 		return
 	}
-	// close file csv
+
+	file, err := os.Open(inputPath)
+	if err != nil {
+		fmt.Println("Ups, terjadi sebuah error :", err)
+		return
+	}
 	defer file.Close()
 
-	// variabel yg isinya baru ngebaca file csv
 	reader := csv.NewReader(file)
 
-	// ni ngebaca semuanya
-	records, err := reader.ReadAll()
+	headers, err := reader.Read()
 	if err != nil {
-		// case error
-		fmt.Println("Error:", err)
+		fmt.Println("Ups, terjadi sebuah error :", err)
 		return
 	}
 
-	fmt.Println(records)
-
-	// Convert CSV ke json
-	var jsonData []map[string]string
-	for _, row := range records {
-		entry := make(map[string]string)
-		for i, value := range row {
-			entry[records[0][i]] = value
+	for {
+		row, err := reader.Read()
+		if err == io.EOF {
+			break
 		}
-		jsonData = append(jsonData, entry)
+		if err != nil {
+			fmt.Println("Ups, terjadi sebuah error :", err)
+			return
+		}
+		rows = append(rows, row)
 	}
 
-	// Convert JSON to string
-	// pakek marsal inden supaya file josn nya rapi kebawah.. ga nyambung terus kesamping
-	jsonString, err := json.MarshalIndent(jsonData, "", " ")
-	if err != nil {
-		fmt.Println("Error:", err)
+	selesai := make(chan bool)
+	defer close(selesai)
+
+	var isError bool
+	go func() {
+		isError = validateAndConvert(headers, rows, outputFlag, filename)
+		selesai <- true
+	}()
+
+	<-selesai
+	if err := os.MkdirAll("output_data_validasi", 0755); err != nil {
+        fmt.Println("Ups, terjadi sebuah error :", err)
+        return
+    }
+
+	if isError {
+		fmt.Println("Validasi gagal. Proses konversi dibatalkan.")
 		return
 	}
 
-	// Print JSON string
-	fmt.Println(string(jsonString))
+	fmt.Printf("Konversi dan Validasi File Berhasil, Data Tertulis ke file %s", outputFile)
+}
 
-	// tambahan hari ini ( 23/04/2024)
-	_ = os.Mkdir("csv_convert", 0777)
-	ch := make(chan model.BaseData)
-	wg := sync.WaitGroup{}
-	jumlahProses := 5
-	for i := 0; i < jumlahProses; i++ {
-		wg.Add(1)
-		go convWithGoroutine(ch, &wg, i)
-	}
-	for _, csv := range records {
-		ch <- csv
+func validateAndConvert(headers []string, rows [][]string, outputFlag *string, filename string) bool {
+	if err := ValidateData(headers, rows); err != nil {
+		fmt.Println("Ups, terjadi sebuah error :", err)
+		return true
 	}
 
-	close(ch)
-
-	wg.Wait()
-
-	// testing progress bar ( ini udah berhasil.. tinggal copas & benerin logicny sesuai dengan case yg dibutuhkan)
-	csvData := records // contoh data ngambil semua isi csv
-
-	// variabel  progress bar dari total valuye
-	bar := progressbar.Default(int64(len(csvData)), "Memproses Data")
-
-	// loop sesuai isi data
-	for _, value := range csvData {
-		// proses nampilin log
-		fmt.Println("Processing value:", value)
-
-		// itungan lambat bar
-		time.Sleep(40 * time.Millisecond)
-		// tambah cls untuk estetika :v
-		cls.CLS()
-		bar.Add(1)
+	jsonData := convertToJSON(headers, rows)
+	outputFile := getOutputFileName(outputFlag, filename)
+	if err := writeJSONToFile(jsonData, outputFile); err != nil {
+		fmt.Println("Ups, terjadi sebuah error :", err)
+		return true
 	}
-	// CsvConvert()
-	// Hapus abis suud prosesny
-	bar.Clear()
 
-	fmt.Println("\n======================================")
-	fmt.Println("Tekan 'Enter' untuk melanjutkan...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	// Membuat progress bar
+	bar := progressbar.Default(int64(len(rows)), "Memproses data csv")
+
+	// Channel untuk mengirim sinyal setiap kali sudah memproses sejumlah banyakData data
+	progressSignal := make(chan bool, banyakData)
+
+	// luping data csv
+	for i, row := range rows {
+		_ = row
+		if (i+1)%banyakData == 0 || i == len(rows)-1 {
+			progressSignal <- true
+		}
+
+		// update bar
+		bar.Add(banyakData)
+		time.Sleep(10 * time.Millisecond) 
+
+		if (i+1)%banyakData == 0 {
+			<-progressSignal
+		}
+	}
+
+	close(progressSignal)
+
+	return false
+}
+
+func getOutputFileName(outputFlag *string, filename string) string {
+	if *outputFlag != "" {
+		return *outputFlag
+	}
+	outputFolder := "output_data_validasi"
+	outputFile := "data.json"
+	return filepath.Join(outputFolder, outputFile)
+}
+
+func writeJSONToFile(jsonData model.JSONData, outputFile string) error {
+	output, err := os.Create(outputFile)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+
+	jsonEncoder := json.NewEncoder(output)
+	jsonEncoder.SetIndent("", "  ")
+	if err := jsonEncoder.Encode(jsonData); err != nil {
+		return err
+	}
+	return nil
+}
+
+func convertToJSON(headers []string, rows [][]string) model.JSONData {
+	var jsonData model.JSONData
+	jsonData.Data = make([]map[string]string, len(rows))
+
+	for i, row := range rows {
+		jsonData.Data[i] = make(map[string]string)
+		for j, value := range row {
+			jsonData.Data[i][headers[j]] = value
+		}
+	}
+
+	return jsonData
+}
+
+func ValidateData(headers []string, rows [][]string) error {
+	var pilihanUser string
+	isError := false
+
+	if len(headers) == 0 {
+		return fmt.Errorf("CSV file harus memiliki sebuah header")
+	}
+
+	for i, row := range rows {
+		for j, value := range row {
+			header := strings.ToLower(headers[j])
+			switch header {
+			case "email":
+				if !govalidator.IsEmail(value) {
+					emailErr := fmt.Sprintf("Email di baris %d tidak valid (%s)", i+2, value)
+					fmt.Println(emailErr)
+					isError = true
+				}
+			case "phone", "no", "telp", "hp":
+				if !isValidPhoneNumber(value) {
+					phoneErr := fmt.Sprintf("No hp di baris %d tidak valid (%s)", i+2, value)
+					fmt.Println(phoneErr)
+					isError = true
+				}
+			}
+		}
+	}
+
+	if isError {
+		for {
+			fmt.Printf("Ada data yang tidak benar dari data csv tersebut, apakah anda yakin untuk melanjutkan ke tahap konversi ? (Y/N) : ")
+			_, err := fmt.Scanln(&pilihanUser)
+			if err != nil {
+				fmt.Println("Ups, terjadi sebuah error :", err)
+			}
+			pilihanUser = strings.TrimSpace(pilihanUser)
+			pilihanUser = strings.ToUpper(pilihanUser)
+			if pilihanUser == "Y" || pilihanUser == "y" {
+				fmt.Println("Melanjutkan konversi...")
+				return nil
+			} else if pilihanUser == "N" || pilihanUser == "n" {
+				return fmt.Errorf("konversi dibatalkan")
+			} else {
+				fmt.Println("Pilihan tidak ditemukan, mohon masukkan jawaban Y/N")
+			}
+		}
+	}
+
+	return nil
+}
+
+func isValidPhoneNumber(phoneNumber string) bool {
+	if len(phoneNumber) > 0 && phoneNumber[0] == '+' {
+		return govalidator.IsNumeric(phoneNumber[1:])
+	}
+	return govalidator.IsNumeric(phoneNumber)
 }
