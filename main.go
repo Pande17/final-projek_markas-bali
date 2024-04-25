@@ -1,6 +1,7 @@
 package main
 
 import (
+	"FinalProject/Kelompok10/controller"
 	"FinalProject/Kelompok10/model"
 	"encoding/csv"
 	"encoding/json"
@@ -17,6 +18,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+<<<<<<< HEAD
 const banyakData = 5 // banyak data untuk diproses secara pararel
 
 func main() {
@@ -70,6 +72,34 @@ func main() {
 	file, err := os.Open(inputPath)
 	if err != nil {
 		fmt.Println("Ups, terjadi sebuah error :", err)
+=======
+func main() {
+	cls.CLS()
+	inputUsr := flag.String("input" ,"", "set input file")
+	outputUsr := flag.String("output", "", "set output file (optional)")
+	flag.Parse()
+	
+	var inputFile string
+
+	if *inputUsr == "" {
+		fmt.Print("Masukkan Path File CSV: ")
+		fmt.Scanln(&inputFile)
+	} else {
+		inputFile = *inputUsr
+	}
+
+	filename := filepath.Base(inputFile)
+	extension := filepath.Ext(inputFile)
+
+	if extension != ".csv" {
+		fmt.Printf("Input file: %s is not a valid CSV file\n", inputFile)
+		return
+	}
+
+	file, err := os.Open(inputFile)
+	if err != nil {
+		fmt.Println("Error :", err)
+>>>>>>> 979380e1fc67e3937eea7c402c56c88683a145fe
 		return
 	}
 	defer file.Close()
@@ -78,22 +108,35 @@ func main() {
 
 	headers, err := reader.Read()
 	if err != nil {
+<<<<<<< HEAD
 		fmt.Println("Ups, terjadi sebuah error :", err)
 		return
 	}
 
+=======
+		fmt.Println("Error :", err)
+		return
+	}
+
+	var rows [][]string
+>>>>>>> 979380e1fc67e3937eea7c402c56c88683a145fe
 	for {
 		row, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
+<<<<<<< HEAD
 			fmt.Println("Ups, terjadi sebuah error :", err)
+=======
+			fmt.Println("Error :", err)
+>>>>>>> 979380e1fc67e3937eea7c402c56c88683a145fe
 			return
 		}
 		rows = append(rows, row)
 	}
 
+<<<<<<< HEAD
 	selesai := make(chan bool)
 	defer close(selesai)
 
@@ -111,10 +154,63 @@ func main() {
 
 	if isError {
 		fmt.Println("Validasi gagal. Proses konversi dibatalkan.")
+=======
+	if err := controller.ValidateData(headers, rows); err != nil {
+		fmt.Println("Error :", err)
 		return
+	} 
+
+	jsonData := convertToJSON(headers, rows)
+
+	var outputFile string
+	if *outputUsr != "" {
+		outputFile = *outputUsr
+	} else {
+		outputFile = strings.TrimSuffix(filename, extension) + ".json"
 	}
 
+	output, err := os.Create(outputFile)
+	if err != nil {
+		fmt.Println("Error :", err)
+>>>>>>> 979380e1fc67e3937eea7c402c56c88683a145fe
+		return
+	}
+	defer output.Close()
+
+<<<<<<< HEAD
 	fmt.Printf("Konversi dan Validasi File Berhasil, Data Tertulis ke file %s", outputFile)
+=======
+	jsonEncoder := json.NewEncoder(output)
+	jsonEncoder.SetIndent("", "  ")
+	if err := jsonEncoder.Encode(jsonData); err != nil {
+		fmt.Println("Error :", err)
+		return
+	}
+	
+	bar := progressbar.Default(100)
+
+	for i := 0; i < 100; i++ {
+		time.Sleep(50 * time.Millisecond)
+		bar.Add(1)
+	}
+	bar.Clear()
+
+	fmt.Printf("Konversi dan Validasi File Berhasil, Data Tertulis ke file %s di Folder ", outputFile)
+}
+
+func convertToJSON(headers []string, rows [][]string) model.JSONData {
+	var jsonData model.JSONData
+	jsonData.Data = make([]map[string]string, len(rows))
+
+	for i, row := range rows {
+		jsonData.Data[i] = make(map[string]string)
+		for j, value := range row {
+			jsonData.Data[i][headers[j]] = value
+		}
+	}
+
+	return jsonData
+>>>>>>> 979380e1fc67e3937eea7c402c56c88683a145fe
 }
 
 func validateAndConvert(headers []string, rows [][]string, outputFlag *string, filename string) bool {
