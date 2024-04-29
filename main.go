@@ -104,7 +104,6 @@ func main() {
 	// nampung error validasi
 	var validationErrors []string
 
-	//
 	wg := sync.WaitGroup{}
 
 	// Membuat progress bar
@@ -168,23 +167,6 @@ func main() {
 		dataConvert = append(dataConvert, loopingChanelDua)
 	}
 
-	// // Proses semua record, kecuali header
-	// for i := 1; i < len(records); i++ {
-	// 	record := mockstruct.CsvRecord{
-	// 		Index: i + 1, // Index dimulai dari 2 karena header dianggap indeks 1
-	// 		Data:  records[i],
-	// 	}
-	// 	chanRecords <- record
-	// }
-	// close(chanRecords) // Menutup channel setelah semua record dikirim
-
-	// // Menunggu semua goroutine selesai
-	// wg.Wait()
-
-	// // Setelah semua goroutine selesai, tutup channel progress dan errors
-	// close(chanProgress)
-	// close(chanErrors)
-
 	// Cek apakah ada error validasi
 	if len(validationErrors) > 0 {
 		for _, err := range validationErrors {
@@ -198,79 +180,6 @@ func main() {
 			return
 		}
 	}
-
-	// Membuat channel untuk memberi tahu goroutine bahwa semua record telah diproses
-	// 	done := make(chan struct{})
-
-	// 	// Menjalankan goroutine untuk memvalidasi dan mengkonversi data
-	// 	wg.Add(numRoutines)
-	// 	for i := 0; i < numRoutines; i++ {
-	// 		go func() {
-	// 			defer wg.Done()
-	// 			for record := range chanRecords {
-	// 				outputJson := make(map[string]interface{})
-	// 				for j, value := range record.Data {
-	// 					// Proses validasi
-	// 					if headers[j] == "email" {
-	// 						if !isValidEmail(value) {
-	// 							chanErrors <- fmt.Errorf("Email di baris %d tidak valid: %s", record.Index, value)
-	// 							continue
-	// 						}
-	// 					}
-	// 					if headers[j] == "phone" {
-	// 						if !isValidPhoneNumber(value) {
-	// 							chanErrors <- fmt.Errorf("Nomor telepon di baris %d tidak valid: %s", record.Index, value)
-	// 							continue
-	// 						}
-	// 					}
-	// 					// Konversi data ke JSON
-	// 					outputJson[headers[j]] = value
-	// 				}
-
-	// 				// Mengirim data hanya jika channel belum ditutup
-	// 				select {
-	// 				case chanConvertedData <- outputJson:
-	// 				case <-done:
-	// 					return
-	// 				}
-	// 				chanProgress <- 1
-	// 			}
-	// 		}()
-	// 	}
-
-	// 	// Proses semua record, kecuali header
-	// 	for i := 1; i < len(records); i++ {
-	// 		record := mockstruct.CsvRecord{
-	// 			Index: i + 1, // Index dimulai dari 2 karena header dianggap indeks 1
-	// 			Data:  records[i],
-	// 		}
-	// 		chanRecords <- record
-	// 	}
-	// 	close(chanRecords)
-
-	// 	// Menunggu semua goroutine selesai
-	// 	wg.Wait()
-
-	// 	// Setelah semua goroutine selesai, tutup channel progress dan errors
-	// 	close(chanProgress)
-	// 	close(chanErrors)
-
-	// 	// Memberi sinyal bahwa semua record telah diproses
-	// 	close(done)
-
-	// 	// Cek apakah ada error validasi
-	// 	if len(validationErrors) > 0 {
-	// 		for _, err := range validationErrors {
-	// 			log.Println(err)
-	// 		}
-	// 		log.Fatal("Ada error validasi, konversi dibatalkan")
-	// 	}
-
-	// 	// Menggabungkan hasil konversi
-	// 	var convertedData []map[string]interface{}
-	// 	for i := 0; i < len(records)-1; i++ {
-	// 		convertedData = append(convertedData, <-chanConvertedData)
-	// 	}
 
 	// Tulis data JSON ke file
 	err = writeJSONToFile(dataConvert, outputFile)
@@ -304,37 +213,3 @@ func writeJSONToFile(data []map[string]interface{}, filename string) error {
 	}
 	return nil
 }
-
-// func isValidPhoneNumber(phoneNumber string) bool {
-// 	return govalidator.IsNumeric(phoneNumber)
-// }
-
-// func validateRecords(records <-chan mockstruct.CsvRecord, outputData chan map[string]any, errors chan error, progress chan int, wg *sync.WaitGroup, headers []string) {
-
-// 	// Loop through records received from the channel
-// 	for record := range records {
-// 		data := map[string]any{}
-// 		for index, value := range record.Data {
-// 			// Proses validasi
-// 			if headers[index] == "email" {
-// 				if !isValidEmail(value) {
-// 					errors <- fmt.Errorf("Email di baris %d tidak valid: %s", record.Index, value)
-// 					continue
-// 				}
-// 			}
-// 			if headers[index] == "phone" {
-// 				if !isValidPhoneNumber(value) {
-// 					errors <- fmt.Errorf("Nomor telepon di baris %d tidak valid: %s", record.Index, value)
-// 					continue
-// 				}
-// 			}
-// 			// Buat kunci untuk map menggunakan sprintf
-// 			data[fmt.Sprintf("%v", headers[index])] = value
-
-// 			outputData <- data
-// 		}
-// 		// Kirim sinyal progress ke channel progress
-// 		progress <- 1
-// 	}
-// 	wg.Done()
-// }
