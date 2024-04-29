@@ -11,12 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"testing"
 
 	"FinalProject/Kelompok10/mockstruct" // Sesuaikan dengan struktur direktori Anda
+	"FinalProject/Kelompok10/utils"
 
 	"github.com/MasterDimmy/go-cls"
-	"github.com/asaskevich/govalidator"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -91,184 +90,190 @@ func main() {
 	}
 
 	// cek panjang
+	fmt.Println("Membaca Header...")
 	if len(records) < 1 {
-		log.Fatal("File CSV terlalu sedikit untuk diproses")
+		log.Fatal("File CSV terlalu singkat untuk diproses")
 	}
-	
+
 	// array slice index 0 dari records
 	headers := records[0]
 
 	// utk nampung data yg di convert jadi json
-	var dataConvert map[string]any
+	dataConvert := []map[string]any{}
 
-	// nampung error valdasi
+	// nampung error validasi
 	var validationErrors []string
 
-	// 
+	//
 	wg := sync.WaitGroup{}
 
 	// Membuat progress bar
-	bar := progressbar.Default(int64(len(records)-1), "Memproses data csv")
+	bar := progressbar.Default(int64(len(records)), "Memproses data csv")
 
 	// Membuat channel untuk komunikasi antar goroutine
-	chanProgress := make(chan int)
-	chanRecords := make(chan mockstruct.CsvRecord, len(records)-1)
-	chanConvertedData := make(chan map[string]any)
-	chanErrors := make(chan error)
+	chanProgress := make(chan int)                               // channel untuk persentase progress
+	chanRecords := make(chan mockstruct.CsvRecord, len(records)) // channel untuk nampung data dari records
+	chanConvertedData := make(chan map[string]any)               // channel untuk menampung data yang sudah diconvert
+	chanErrors := make(chan error)                               // channel untuk menampung error
 
 	// Menentukan jumlah goroutine yang akan dijalankan
-	numRoutines := 1
+	numRoutines := 5
 
-	// 2 go rutin 
+	// 2 go rutin
 	go func() {
-        for progress := range chanProgress {
-            bar.Add(progress)
-        }
-    }()
+		for progress := range chanProgress {
+			bar.Add(progress)
+		}
+	}()
 
-    go func() {
-        for errors := range chanErrors {
-            validationErrors = append(validationErrors, errors.Error())
-        }
-    }()
+	go func() {
+		for errors := range chanErrors {
+			validationErrors = append(validationErrors, errors.Error())
+		}
+	}()
 
 	// looping part 3
 	for i := 0; i < numRoutines; i++ {
 		wg.Add(1)
-		go validateRecords(chanProgress, chanRecords, chanConvertedData, chanErrors, wg, headers)
-
-		for recordLooping := range records {
-			if recordLooping == 0 {
-				chanProgress <- 1
-				continue
-			}
-			
-			// Kirim data ke channel outputData
-			chanRecords <- recordLooping
-		}
+		go utils.ValidateRecords(chanRecords, chanConvertedData, chanErrors, chanProgress, &wg, headers)
 	}
+
+	for index, record := range records {
+		if index == 0 {
+			chanProgress <- 1
+			continue
+		}
+
+		// Kirim data ke channel outputData
+		chanRecords <- mockstruct.CsvRecord{Index: index, Data: record}
+	}
+
 	close(chanRecords)
 
 	go func() {
 		// Menunggu selesai dari WaitGroup
 		wg.Wait()
-		
+
 		// Menyelesaikan progress bar
 		bar.Finish()
-	
+
 		// Menutup ketiga channel
 		close(chanProgress)
-		close(chanRecords)
+		close(chanConvertedData)
 		close(chanErrors)
+
 	}()
 
-	for loopingChanelDua := range chanRecords {
-
-	}
-	
-
-
-
-// Proses semua record, kecuali header
-for i := 1; i < len(records); i++ {
-    record := mockstruct.CsvRecord{
-        Index: i + 1, // Index dimulai dari 2 karena header dianggap indeks 1
-        Data:  records[i],
-    }
-    chanRecords <- record
-}
-close(chanRecords) // Menutup channel setelah semua record dikirim
-
-// Menunggu semua goroutine selesai
-wg.Wait()
-
-// Setelah semua goroutine selesai, tutup channel progress dan errors
-close(chanProgress)
-close(chanErrors)
-
-// Cek apakah ada error validasi
-if len(validationErrors) > 0 {
-    for _, err := range validationErrors {
-        log.Println(err)
-    }
-    log.Fatal("Ada error validasi, konversi dibatalkan")
-}
-
-	// Membuat channel untuk memberi tahu goroutine bahwa semua record telah diproses
-	done := make(chan struct{})
-
-	// Menjalankan goroutine untuk memvalidasi dan mengkonversi data
-	wg.Add(numRoutines)
-	for i := 0; i < numRoutines; i++ {
-		go func() {
-			defer wg.Done()
-			for record := range chanRecords {
-				outputJson := make(map[string]interface{})
-				for j, value := range record.Data {
-					// Proses validasi
-					if headers[j] == "email" {
-						if !isValidEmail(value) {
-							chanErrors <- fmt.Errorf("Email di baris %d tidak valid: %s", record.Index, value)
-							continue
-						}
-					}
-					if headers[j] == "phone" {
-						if !isValidPhoneNumber(value) {
-							chanErrors <- fmt.Errorf("Nomor telepon di baris %d tidak valid: %s", record.Index, value)
-							continue
-						}
-					}
-					// Konversi data ke JSON
-					outputJson[headers[j]] = value
-				}
-
-				// Mengirim data hanya jika channel belum ditutup
-				select {
-				case chanConvertedData <- outputJson:
-				case <-done:
-					return
-				}
-				chanProgress <- 1
-			}
-		}()
+	for loopingChanelDua := range chanConvertedData {
+		dataConvert = append(dataConvert, loopingChanelDua)
 	}
 
-	// Proses semua record, kecuali header
-	for i := 1; i < len(records); i++ {
-		record := mockstruct.CsvRecord{
-			Index: i + 1, // Index dimulai dari 2 karena header dianggap indeks 1
-			Data:  records[i],
-		}
-		chanRecords <- record
-	}
-	close(chanRecords)
+	// // Proses semua record, kecuali header
+	// for i := 1; i < len(records); i++ {
+	// 	record := mockstruct.CsvRecord{
+	// 		Index: i + 1, // Index dimulai dari 2 karena header dianggap indeks 1
+	// 		Data:  records[i],
+	// 	}
+	// 	chanRecords <- record
+	// }
+	// close(chanRecords) // Menutup channel setelah semua record dikirim
 
-	// Menunggu semua goroutine selesai
-	wg.Wait()
+	// // Menunggu semua goroutine selesai
+	// wg.Wait()
 
-	// Setelah semua goroutine selesai, tutup channel progress dan errors
-	close(chanProgress)
-	close(chanErrors)
-
-	// Memberi sinyal bahwa semua record telah diproses
-	close(done)
+	// // Setelah semua goroutine selesai, tutup channel progress dan errors
+	// close(chanProgress)
+	// close(chanErrors)
 
 	// Cek apakah ada error validasi
 	if len(validationErrors) > 0 {
 		for _, err := range validationErrors {
 			log.Println(err)
 		}
-		log.Fatal("Ada error validasi, konversi dibatalkan")
+		fmt.Print("Terjadi Error. Apakah Anda ingin tetap mengkonversinya atau tidak? (y/n): ")
+		var convertLagi string //ganti variabel
+		fmt.Scanln(&convertLagi)
+		if convertLagi != "y" && convertLagi != "Y" {
+			fmt.Println("Konversi dibatalkan.")
+			return
+		}
 	}
 
-	// Menggabungkan hasil konversi
-	var convertedData []map[string]interface{}
-	for i := 0; i < len(records)-1; i++ {
-		convertedData = append(convertedData, <-chanConvertedData)
-	}
+	// Membuat channel untuk memberi tahu goroutine bahwa semua record telah diproses
+	// 	done := make(chan struct{})
+
+	// 	// Menjalankan goroutine untuk memvalidasi dan mengkonversi data
+	// 	wg.Add(numRoutines)
+	// 	for i := 0; i < numRoutines; i++ {
+	// 		go func() {
+	// 			defer wg.Done()
+	// 			for record := range chanRecords {
+	// 				outputJson := make(map[string]interface{})
+	// 				for j, value := range record.Data {
+	// 					// Proses validasi
+	// 					if headers[j] == "email" {
+	// 						if !isValidEmail(value) {
+	// 							chanErrors <- fmt.Errorf("Email di baris %d tidak valid: %s", record.Index, value)
+	// 							continue
+	// 						}
+	// 					}
+	// 					if headers[j] == "phone" {
+	// 						if !isValidPhoneNumber(value) {
+	// 							chanErrors <- fmt.Errorf("Nomor telepon di baris %d tidak valid: %s", record.Index, value)
+	// 							continue
+	// 						}
+	// 					}
+	// 					// Konversi data ke JSON
+	// 					outputJson[headers[j]] = value
+	// 				}
+
+	// 				// Mengirim data hanya jika channel belum ditutup
+	// 				select {
+	// 				case chanConvertedData <- outputJson:
+	// 				case <-done:
+	// 					return
+	// 				}
+	// 				chanProgress <- 1
+	// 			}
+	// 		}()
+	// 	}
+
+	// 	// Proses semua record, kecuali header
+	// 	for i := 1; i < len(records); i++ {
+	// 		record := mockstruct.CsvRecord{
+	// 			Index: i + 1, // Index dimulai dari 2 karena header dianggap indeks 1
+	// 			Data:  records[i],
+	// 		}
+	// 		chanRecords <- record
+	// 	}
+	// 	close(chanRecords)
+
+	// 	// Menunggu semua goroutine selesai
+	// 	wg.Wait()
+
+	// 	// Setelah semua goroutine selesai, tutup channel progress dan errors
+	// 	close(chanProgress)
+	// 	close(chanErrors)
+
+	// 	// Memberi sinyal bahwa semua record telah diproses
+	// 	close(done)
+
+	// 	// Cek apakah ada error validasi
+	// 	if len(validationErrors) > 0 {
+	// 		for _, err := range validationErrors {
+	// 			log.Println(err)
+	// 		}
+	// 		log.Fatal("Ada error validasi, konversi dibatalkan")
+	// 	}
+
+	// 	// Menggabungkan hasil konversi
+	// 	var convertedData []map[string]interface{}
+	// 	for i := 0; i < len(records)-1; i++ {
+	// 		convertedData = append(convertedData, <-chanConvertedData)
+	// 	}
 
 	// Tulis data JSON ke file
-	err = writeJSONToFile(convertedData, outputFile)
+	err = writeJSONToFile(dataConvert, outputFile)
 	if err != nil {
 		log.Fatal("Error writing JSON to file:", err)
 	}
@@ -300,79 +305,36 @@ func writeJSONToFile(data []map[string]interface{}, filename string) error {
 	return nil
 }
 
-func isValidEmail(email string) bool {
-	return govalidator.IsEmail(email)
-}
+// func isValidPhoneNumber(phoneNumber string) bool {
+// 	return govalidator.IsNumeric(phoneNumber)
+// }
 
-func isValidPhoneNumber(phoneNumber string) bool {
-	return govalidator.IsNumeric(phoneNumber)
-}
+// func validateRecords(records <-chan mockstruct.CsvRecord, outputData chan map[string]any, errors chan error, progress chan int, wg *sync.WaitGroup, headers []string) {
 
-func validateRecords(records <-chan mockstruct.CsvRecord, outputData chan map[string]any, errors chan error, progress chan int, wg *sync.WaitGroup, headers []string) {
-    
-    // Loop through records received from the channel
-    for record := range records {
-		data := map[string]any{}
-        for index, value := range record.Data {
-            // Proses validasi
-            if headers[index] == "email" {
-                if !isValidEmail(value) {
-                    errors <- fmt.Errorf("Email di baris %d tidak valid: %s", record.Index, value)
-                    continue
-                }
-            }
-            if headers[index] == "phone" {
-                if !isValidPhoneNumber(value) {
-                    errors <- fmt.Errorf("Nomor telepon di baris %d tidak valid: %s", record.Index, value)
-                    continue
-                }
-            }
-			            // Buat kunci untuk map menggunakan sprintf
-						data[fmt.Sprintf("%v", headers[index])] = value
-            
+// 	// Loop through records received from the channel
+// 	for record := range records {
+// 		data := map[string]any{}
+// 		for index, value := range record.Data {
+// 			// Proses validasi
+// 			if headers[index] == "email" {
+// 				if !isValidEmail(value) {
+// 					errors <- fmt.Errorf("Email di baris %d tidak valid: %s", record.Index, value)
+// 					continue
+// 				}
+// 			}
+// 			if headers[index] == "phone" {
+// 				if !isValidPhoneNumber(value) {
+// 					errors <- fmt.Errorf("Nomor telepon di baris %d tidak valid: %s", record.Index, value)
+// 					continue
+// 				}
+// 			}
+// 			// Buat kunci untuk map menggunakan sprintf
+// 			data[fmt.Sprintf("%v", headers[index])] = value
 
-            			outputData <- data 
-        }
-        // Kirim sinyal progress ke channel progress
-        progress <- 1
-    }
-	wg.Done()
-}
-
-func Test_EmailValidation(t *testing.T) {
-    t.Run("Success", func(t *testing.T) {
-
-        mailString := "valid@email.com"
-        header := "email"
-
-        ch := make(chan mockstruct.CsvRecord)
-        chOutput := make(chan map[string]any, 1)
-        chErrors := make(chan error, 1)
-        wg := new(sync.WaitGroup)
-
-        mockData := mockstruct.CsvRecord{
-            Index: 1,
-            Data:  []string{mailString},
-        }
-        wg.Add(1)
-        go utils.ValidateCsv(ch, chOutput, chErrors, make(chan int, 1), wg, []string{headers})
-
-        ch <- mockData
-        close(ch)
-
-        wg.Wait()
-
-        select {
-        case err := <-chErrors:
-            t.Errorf("Test failed, got error message :%s", err.Error())
-        case <-chOutput:
-            fmt.Println("Email Valid")
-        }
-    })
-    t.Run("Failed", func(t *testing.T) {
-        // Fill code
-    })
-	
-}
-
-
+// 			outputData <- data
+// 		}
+// 		// Kirim sinyal progress ke channel progress
+// 		progress <- 1
+// 	}
+// 	wg.Done()
+// }
