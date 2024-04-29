@@ -372,6 +372,7 @@ func Test_EmailValidation(t *testing.T) {
     t.Run("Failed", func(t *testing.T) {
         // Fill code
     })
+	
 }
 
 
