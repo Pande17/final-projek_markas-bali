@@ -38,8 +38,9 @@ func ValidateRecords(records <-chan mockstruct.CsvRecord, outputData chan map[st
 			// Buat kunci untuk map menggunakan sprintf
 			data[fmt.Sprintf("%v", headers[index])] = value
 
-			outputData <- data
+			
 		}
+		outputData <- data
 		// Kirim sinyal progress ke channel progress
 		progress <- 1
 	}

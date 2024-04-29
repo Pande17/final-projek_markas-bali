@@ -173,9 +173,9 @@ func main() {
 			log.Println(err)
 		}
 		fmt.Print("Terjadi Error. Apakah Anda ingin tetap mengkonversinya atau tidak? (y/n): ")
-		var convertLagi string //ganti variabel
-		fmt.Scanln(&convertLagi)
-		if convertLagi != "y" && convertLagi != "Y" {
+		var mulaiUlang string 
+		fmt.Scanln(&mulaiUlang)
+		if mulaiUlang != "y" && mulaiUlang != "Y" {
 			fmt.Println("Konversi dibatalkan.")
 			return
 		}
