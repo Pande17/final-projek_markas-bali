@@ -118,13 +118,14 @@ func main() {
 	// Menentukan jumlah goroutine yang akan dijalankan
 	numRoutines := 5
 
-	// 2 go rutin
+	// go routine 1 
 	go func() {
 		for progress := range chanProgress {
 			bar.Add(progress)
 		}
 	}()
-
+	
+	// go routine 2
 	go func() {
 		for errors := range chanErrors {
 			validationErrors = append(validationErrors, errors.Error())
@@ -149,6 +150,7 @@ func main() {
 
 	close(chanRecords)
 
+	// go routine 3
 	go func() {
 		// Menunggu selesai dari WaitGroup
 		wg.Wait()
