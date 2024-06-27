@@ -18,15 +18,6 @@
         "postal_code": "05462"
     },
     {
-        "address": "51185 Helmsman Street",
-        "city": "201 West Montgomery Cross Road",
-        "email": "lsFVbKq@ALunoiM.edu",
-        "id": "4",
-        "name": "King Ambrose Spencer",
-        "phone": "+738104591762",
-        "postal_code": "99502"
-    },
-    {
         "address": "1537 Northwest 123rd Street",
         "city": "39 Cottage Street",
         "email": "dSiSaeD@tUJEnVy.net",
@@ -34,24 +25,6 @@
         "name": "King Sylvan Reichert",
         "phone": "+898110736425",
         "postal_code": "36106"
-    },
-    {
-        "address": "82 Lookout Mountain Drive",
-        "city": "12 Kane Road",
-        "email": "EKOemAn@BexQEyS.biz",
-        "id": "5",
-        "name": "Lord Eriberto Schuppe",
-        "phone": "+783947102651",
-        "postal_code": "37218"
-    },
-    {
-        "address": "2223 North Fernwood Court",
-        "city": "689 Stableway Road",
-        "email": "uGIljHa@MqaCwQi.org",
-        "id": "3",
-        "name": "King Ralph Buckridge",
-        "phone": "+889273514610",
-        "postal_code": "36116"
     },
     {
         "address": "503 Orchard Road",
@@ -81,6 +54,15 @@
         "postal_code": "72704"
     },
     {
+        "address": "82 Lookout Mountain Drive",
+        "city": "12 Kane Road",
+        "email": "EKOemAn@BexQEyS.biz",
+        "id": "5",
+        "name": "Lord Eriberto Schuppe",
+        "phone": "+783947102651",
+        "postal_code": "37218"
+    },
+    {
         "address": "3194 Bladensburg Road Northeast",
         "city": "8 Kozera Avenue",
         "email": "JwcEpxa@yCBlfOq.net",
@@ -88,5 +70,23 @@
         "name": "Prof. Jerry Kreiger",
         "phone": "+810148596723",
         "postal_code": "06040"
+    },
+    {
+        "address": "51185 Helmsman Street",
+        "city": "201 West Montgomery Cross Road",
+        "email": "lsFVbKq@ALunoiM.edu",
+        "id": "4",
+        "name": "King Ambrose Spencer",
+        "phone": "+738104591762",
+        "postal_code": "99502"
+    },
+    {
+        "address": "2223 North Fernwood Court",
+        "city": "689 Stableway Road",
+        "email": "uGIljHa@MqaCwQi.org",
+        "id": "3",
+        "name": "King Ralph Buckridge",
+        "phone": "+889273514610",
+        "postal_code": "36116"
     }
 ]
